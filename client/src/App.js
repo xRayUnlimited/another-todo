@@ -1,13 +1,39 @@
 import React from 'react';
 import { Form, Header, Container, List, Input, Segment } from 'semantic-ui-react';
+import axios from 'axios';
+
+const styles = {
+  complete: { textDecoration: 'line-through', color: 'grey' }
+}
 
 class App extends React.Component {
   state = { name: '', todos: [] }
 
+  componentDidMount() {
+    axios.get('/api/todos')
+      .then( ({ data: todos }) => this.setState({ todos }) )
+  }
+
   handleSubmit = e => {
     e.preventDefault();
     const { name, todos } = this.state;
-    this.setState({ todos: [name, ...todos], name: '' })
+    axios.post('/api/todos', { name })
+      .then( ({ data }) => {
+        this.setState({ todos: [data, ...todos], name: '' })
+      })
+  }
+
+  updateTodo = id => {
+    axios.put(`/api/todos/${id}`)
+      .then( ({ data }) => {
+        const todos = this.state.todos.map( todo => {
+          if (todo.id === id)
+            return data
+          return todo
+        });
+
+        this.setState({ todos });
+      });
   }
 
   render() {
@@ -24,7 +50,16 @@ class App extends React.Component {
             />
           </Form>
           <List>
-            { todos.map( (t,i) => <List.Item key={i}>{t}</List.Item> )}
+            { todos.map( todo => 
+                <List.Item 
+                  key={todo.id}
+                  style={ todo.complete ? styles.complete : {} }
+                  onClick={ () => this.updateTodo(todo.id) }
+                >
+                  {todo.name}
+                </List.Item> 
+              )
+            }
           </List>
         </Segment>
       </Container>
